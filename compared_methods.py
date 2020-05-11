@@ -1,5 +1,5 @@
 import random
-import cPickle
+import pickle
 import numpy as np
 import multiprocessing
 import traj_dist.distance as tdist
@@ -8,25 +8,34 @@ import os
 random.seed(2016)
 sampleNum = 10
 
+def pick_load(filename):
+    with open(file=filename, mode='rb') as f:
+        return pickle.load(f)
+
 def trajectoryAlldistance(i,trjs):
 
     trs_matrix = tdist.cdist(trjs, [trjs[i]],metric="hausdorff")
-    cPickle.dump(trs_matrix, open('./distance_compution/hausdorff_distance/hausdorff_distance_' + str(i), 'w'))
+    with open('./distance_compution/hausdorff_distance/hausdorff_distance_' + str(i), 'wb') as f:
+        pickle.dump(trs_matrix, f, pickle.HIGHEST_PROTOCOL)
 
     trs_matrix = tdist.cdist(trjs, [trjs[i]],metric="lcss",eps=200)
-    cPickle.dump(trs_matrix, open('./distance_compution/LCSS_distance/LCSS_distance_' + str(i), 'w'))
-    #
-    trs_matrix = tdist.cdist(trjs, [trjs[i]],metric="edr",eps=200)
-    cPickle.dump(trs_matrix, open('./distance_compution/EDR_distance/EDR_distance_' + str(i), 'w'))
-    #
-    trs_matrix = tdist.cdist(trjs, [trjs[i]],metric="dtw")
-    cPickle.dump(trs_matrix, open('./distance_compution/DTW_distance/DTW_distance_'+str(i), 'w'))
 
-    print 'complete: '+str(i)
+    with open('./distance_compution/LCSS_distance/LCSS_distance_' + str(i), 'wb') as f:
+        pickle.dump(trs_matrix, f, pickle.HIGHEST_PROTOCOL)
+
+    trs_matrix = tdist.cdist(trjs, [trjs[i]],metric="edr",eps=200)
+    with open('./distance_compution/EDR_distance/EDR_distance_' + str(i), 'wb') as f:
+        pickle.dump(trs_matrix, f, pickle.HIGHEST_PROTOCOL)
+    
+    trs_matrix = tdist.cdist(trjs, [trjs[i]],metric="dtw")
+    with open('./distance_compution/DTW_distance/DTW_distance_'+str(i), 'wb') as f:
+        pickle.dump(trs_matrix, f , pickle.HIGHEST_PROTOCOL)
+
+    print('complete: '+str(i))
 
 
 def compute_distance():
-    trjs = cPickle.load(open('./simulated_data/sim_trajectories'))
+    trjs = pick_load('./simulated_data/sim_trajectories')
     trs_compare = []
     for tr in trjs:
         trarray = []
@@ -36,7 +45,7 @@ def compute_distance():
     pool = multiprocessing.Pool(processes=30)
     # print np.shape(distance)
     for i in range(len(trs_compare)):
-        print str(i)
+        print(str(i))
         pool.apply_async(trajectoryAlldistance, (i, trs_compare))
     pool.close()
     pool.join()
@@ -51,12 +60,13 @@ def combainDistances(inputPath = './distance_compution/DTW_distance/'):
     distances = []
     for fn in files_index:
         distance = []
-        dis = cPickle.load(open(inputPath+fn[0]))
+        dis = pick_load(inputPath+fn[0])
         for i in dis:
             distance.append(i[0])
         distances.append(np.array(distance))
-    print np.shape(distances)
-    cPickle.dump(distances,open('./distances/'+inputPath.split('/')[2]+'_matrix','w'))
+    print(np.shape(distances))
+    with open('./distances/'+inputPath.split('/')[2]+'_matrix','wb') as f:
+        pickle.dump(distances, f, pickle.HIGHEST_PROTOCOL)
 
 def kMedoids(D, k, tmax=100):
     # determine dimensions of distance matrix D
@@ -99,9 +109,9 @@ def kMedoids(D, k, tmax=100):
     return M, C
 
 def distanceClusterTest(inputFile ='./distances/DTW_distance_matrix'):
-    print '---------------------------------'
-    print inputFile
-    distanceMatrix = cPickle.load(open(inputFile))
+    print('---------------------------------')
+    print(inputFile)
+    distanceMatrix = pick_load(inputFile)
     M,C = kMedoids(np.array(distanceMatrix),3)
     cresult = []
     for label in C:
@@ -117,25 +127,25 @@ def distanceClusterTest(inputFile ='./distances/DTW_distance_matrix'):
     all  = 0.
 
     strList = [[te[0],te[1]] for te in cresult]
-    print 'Straight:  '+str(strList)
+    print('Straight:  '+str(strList))
     m = max([te[1] for te in strList])
     all = all + m
-    print float(m) / sampleNum
+    print(float(m) / sampleNum)
 
     cirList = [[te[0],te[2]] for te in cresult]
-    print 'Circling:  '+str(cirList)
+    print('Circling:  '+str(cirList))
     m = max([te[1] for te in cirList])
     all = all + m
-    print float(m) / sampleNum
+    print(float(m) / sampleNum)
 
     bendList = [[te[0],te[3]] for te in cresult]
-    print 'Bending :  '+str(bendList)
+    print('Bending :  '+str(bendList))
     m = max([te[1] for te in bendList])
     all = all + m
-    print float(m) / sampleNum
-    print 'overall'
-    print all/(sampleNum*3)
-    print '---------------------------------'
+    print(float(m) / sampleNum)
+    print('overall')
+    print(all/(sampleNum*3))
+    print('---------------------------------')
 
 if __name__ == '__main__':
     compute_distance()

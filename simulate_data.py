@@ -1,5 +1,5 @@
 import random
-import cPickle
+import pickle
 import numpy as np
 import math
 
@@ -98,8 +98,9 @@ def sim_data(sampleNum = sampleNum,speedPreSec = speedPreSec,
             y1 = math.cos(angle) * y + math.sin(angle) * x
             turnSample.append([point[0],x1,y1])
         simData.append(turnSample)
-
-    cPickle.dump(simData,open('./simulated_data/sim_trajectories','w'))
+    
+    with open('./simulated_data/sim_trajectories','wb') as f:
+        pickle.dump(simData, f, pickle.HIGHEST_PROTOCOL)
     return simData
 
 if __name__ == '__main__':
