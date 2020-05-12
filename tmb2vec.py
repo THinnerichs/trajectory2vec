@@ -1,5 +1,5 @@
 import random
-import cPickle
+import pickle
 import numpy as np
 import math
 import pandas
@@ -11,8 +11,12 @@ from sklearn import preprocessing
 random.seed(2016)
 sampleNum = 10
 
+def pick_load(filename):
+    with open(file=filename, mode='rb') as f:
+        return pickle.load(f)
+
 def completeTrajectories():
-    simTrjss = cPickle.load(open('./simulated_data/sim_trajectories'))
+    simTrjss = pick_load('./simulated_data/sim_trajectories')
     simTrjComps = []
     for simTrjs in simTrjss:
         trjsCom = []
@@ -29,11 +33,12 @@ def completeTrajectories():
                 rec.append(math.atan((simTrjs[i][2]-simTrjs[i-1][2])/ (simTrjs[i][1]-simTrjs[i-1][1])))
             trjsCom.append(rec)
         simTrjComps.append(trjsCom)
-    cPickle.dump(simTrjComps,open('./simulated_data/sim_trajectories_complete','w'))
+    with open('./simulated_data/sim_trajectories_complete','wb') as f:
+        pickle.dump(simTrjComps, f, pickle.HIGHEST_PROTOCOL)
     return simTrjComps
 
 def computeFeas():
-    simTrjCompss = cPickle.load(open('./simulated_data/sim_trajectories_complete'))
+    simTrjCompss = pick_load('./simulated_data/sim_trajectories_complete')
     simTrjFeas = []
     for simTrjComps in simTrjCompss:
         trjsComfea = []
@@ -55,7 +60,8 @@ def computeFeas():
                     rec.append(simTrjComps[i][3]-simTrjComps[i-1][3])
             trjsComfea.append(rec)
         simTrjFeas.append(trjsComfea)
-    cPickle.dump(simTrjFeas, open('./simulated_data/sim_trajectories_feas', 'w'))
+    with open('./simulated_data/sim_trajectories_feas', 'wb') as f:
+        pickle.dump(simTrjFeas, f, pickle.HIGHEST_PROTOCOL)
     return simTrjFeas
 
 def rolling_window(sample, windowsize = 600, offset = 300):
@@ -119,30 +125,27 @@ def behavior_ext(windows):
     return behavior_sequence
 
 def generate_behavior_sequences():
-    f = open('./simulated_data/sim_trajectories_feas')
-    sim_data = cPickle.load(f)
+    sim_data = pick_load('./simulated_data/sim_trajectories_feas')
     behavior_sequences = []
 
     for sample in sim_data:
         windows = rolling_window(sample)
         behavior_sequence = behavior_ext(windows)
-        print len(behavior_sequence)
+        print((len(behavior_sequence)))
         behavior_sequences.append(behavior_sequence)
-    fout = open('./simulated_data/sim_behavior_sequences','w')
-    cPickle.dump(behavior_sequences,fout)
+    with open('./simulated_data/sim_behavior_sequences','wb') as f:
+        pickle.dump(behavior_sequences, f, pickle.HIGHEST_PROTOCOL)
 
 def generate_normal_behavior_sequence():
-    f = open('./simulated_data/sim_behavior_sequences')
-    behavior_sequences = cPickle.load(f)
-
-    print np.shape(behavior_sequences)
+    behavior_sequences = pick_load('./simulated_data/sim_behavior_sequences')
+    print((np.shape(behavior_sequences)))
     behavior_sequences_normal = []
     templist = []
     for item in behavior_sequences:
         for ii in item:
             templist.append(ii)
-        print len(item)
-    print len(templist)
+        print((len(item)))
+    print((len(templist)))
     min_max_scaler = preprocessing.MinMaxScaler()
     # print np.shape(behavior_sequence)
     templist_normal = min_max_scaler.fit_transform(templist).tolist()
@@ -152,12 +155,12 @@ def generate_normal_behavior_sequence():
         for ii in item:
             behavior_sequence_normal.append(templist_normal[index])
             index = index + 1
-        print len(behavior_sequence_normal)
+        print((len(behavior_sequence_normal)))
         behavior_sequences_normal.append(behavior_sequence_normal)
-    print index
-    print np.shape(behavior_sequences_normal)
-    fout = open('./simulated_data/sim_normal_behavior_sequences', 'w')
-    cPickle.dump(behavior_sequences_normal, fout)
+    print(index)
+    print((np.shape(behavior_sequences_normal)))
+    with open('./simulated_data/sim_normal_behavior_sequences', 'wb') as f:
+        pickle.dump(behavior_sequences_normal, f)
 
 def trajectory2Vec():
     def loopf(prev, i):
@@ -222,21 +225,21 @@ def trajectory2Vec():
     with tf.Session() as sess:
         sess.run(init)
         # Training cycle
-        input_datas = cPickle.load(open('./simulated_data/sim_normal_behavior_sequences'))
+        input_datas = pick_load('./simulated_data/sim_normal_behavior_sequences')
         trajectoryVecs = []
         j = 0
         for input_data in input_datas:
-            print 'Sample:'
-            print j
+            print('Sample:')
+            print(j)
             input_len = len(input_data)
-            print input_len
+            print(input_len)
             defalt = []
             for i in range(0, frame_dim):
                 defalt.append(0)
             while len(input_data) < max_n_steps:
                 input_data.append(defalt)
             x = np.array(input_data)
-            print np.shape(x[0])
+            print((np.shape(x[0])))
             x = x.reshape((max_n_steps, batch_size, frame_dim))
             embedding = None
             for epoch in range(training_epochs):
@@ -246,23 +249,23 @@ def trajectory2Vec():
                     [optimizer, loss, enc_state, encoder_inputs, dec_outputs, loss_inputs], feed_dict=feed)
                 # Display logs per epoch step
                 if epoch % display_step == 0:
-                    print "logits"
+                    print("logits")
                     a = sess.run(y_pred, feed_dict=feed)
-                    print "labels"
+                    print("labels")
                     b = sess.run(y_true, feed_dict=feed)
 
-                    print("Epoch:", '%04d' % (epoch + 1), "cost=", "{:.9f}".format(cost_value))
+                    print(("Epoch:", '%04d' % (epoch + 1), "cost=", "{:.9f}".format(cost_value)))
             trajectoryVecs.append(embedding)
             print("Optimization Finished!")
             j = j + 1
-        fout = file('./simulated_data/sim_traj_vec_normal_reverse', 'w')
-        cPickle.dump(trajectoryVecs, fout)
+        with open('./simulated_data/sim_traj_vec_normal_reverse', 'wb') as f:
+            pickle.dump(trajectoryVecs, f)
 
 def vecClusterAnalysis():
-    print '---------------------------------'
-    print 'Our Method'
+    print('---------------------------------')
+    print('Our Method')
     trVecs = []
-    trs = cPickle.load(open('./simulated_data/sim_traj_vec_normal_reverse'))
+    trs = pick_load('./simulated_data/sim_traj_vec_normal_reverse')
     inte = []
     for tr in trs:
         trVecs.append(tr[0][0])
@@ -274,10 +277,10 @@ def vecClusterAnalysis():
     l = []
     for i in item:
         l.append([i,clusters[:sampleNum].count(i)])
-    print 'Straight:  '+ str(l)
+    print(('Straight:  '+ str(l)))
     m = max([te[1] for te in l])
     all = all + m
-    print float(m)/sampleNum
+    print((float(m)/sampleNum))
 
 
     m = 0.
@@ -285,10 +288,10 @@ def vecClusterAnalysis():
     l = []
     for i in item:
         l.append([i,clusters[sampleNum:sampleNum*2].count(i)])
-    print 'Circling:  '+ str(l)
+    print(('Circling:  '+ str(l)))
     m = max([te[1] for te in l])
     all = all + m
-    print float(m)/sampleNum
+    print((float(m)/sampleNum))
 
     m = 0.
     item = set(clusters[sampleNum*2:sampleNum*3])
@@ -296,12 +299,12 @@ def vecClusterAnalysis():
     for i in item:
         l.append([i,clusters[sampleNum*2:sampleNum*3].count(i)])
     m = max([te[1] for te in l])
-    print 'bending:   '+ str(l)
+    print(('bending:   '+ str(l)))
     all = all + m
-    print float(m)/sampleNum
-    print 'overall'
-    print all/(sampleNum*3)
-    print '---------------------------------'
+    print((float(m)/sampleNum))
+    print('overall')
+    print((all/(sampleNum*3)))
+    print('---------------------------------')
 
 if __name__ == '__main__':
     completeTrajectories()

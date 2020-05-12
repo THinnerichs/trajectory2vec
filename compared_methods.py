@@ -31,7 +31,7 @@ def trajectoryAlldistance(i,trjs):
     with open('./distance_compution/DTW_distance/DTW_distance_'+str(i), 'wb') as f:
         pickle.dump(trs_matrix, f , pickle.HIGHEST_PROTOCOL)
 
-    print('complete: '+str(i))
+    print(('complete: '+str(i)))
 
 
 def compute_distance():
@@ -45,7 +45,7 @@ def compute_distance():
     pool = multiprocessing.Pool(processes=30)
     # print np.shape(distance)
     for i in range(len(trs_compare)):
-        print(str(i))
+        print((str(i)))
         pool.apply_async(trajectoryAlldistance, (i, trs_compare))
     pool.close()
     pool.join()
@@ -64,7 +64,7 @@ def combainDistances(inputPath = './distance_compution/DTW_distance/'):
         for i in dis:
             distance.append(i[0])
         distances.append(np.array(distance))
-    print(np.shape(distances))
+    print((np.shape(distances)))
     with open('./distances/'+inputPath.split('/')[2]+'_matrix','wb') as f:
         pickle.dump(distances, f, pickle.HIGHEST_PROTOCOL)
 
@@ -127,24 +127,24 @@ def distanceClusterTest(inputFile ='./distances/DTW_distance_matrix'):
     all  = 0.
 
     strList = [[te[0],te[1]] for te in cresult]
-    print('Straight:  '+str(strList))
+    print(('Straight:  '+str(strList)))
     m = max([te[1] for te in strList])
     all = all + m
-    print(float(m) / sampleNum)
+    print((float(m) / sampleNum))
 
     cirList = [[te[0],te[2]] for te in cresult]
-    print('Circling:  '+str(cirList))
+    print(('Circling:  '+str(cirList)))
     m = max([te[1] for te in cirList])
     all = all + m
-    print(float(m) / sampleNum)
+    print((float(m) / sampleNum))
 
     bendList = [[te[0],te[3]] for te in cresult]
-    print('Bending :  '+str(bendList))
+    print(('Bending :  '+str(bendList)))
     m = max([te[1] for te in bendList])
     all = all + m
-    print(float(m) / sampleNum)
+    print((float(m) / sampleNum))
     print('overall')
-    print(all/(sampleNum*3))
+    print((all/(sampleNum*3)))
     print('---------------------------------')
 
 if __name__ == '__main__':
